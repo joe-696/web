@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Nueva Publicación | Mi Proyecto</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005f6b;
+        }
+
+        main {
+            margin-top: 30px;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: auto;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        /* Estilo del mensaje de validación */
+        .mensaje {
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .exito {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Crear Nueva Publicación</h1>
+        <button onclick="window.location.href='index.html'">Ver Publicaciones</button>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <input type="text" id="titulo" placeholder="Título de la Publicación" required>
+            <textarea id="contenido" placeholder="Contenido de la Publicación" rows="6" required></textarea>
+            <button id="btnPublicar">Publicar</button>
+        </div>
+
+        <div id="mensaje" class="mensaje" style="display: none;"></div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Mi Proyecto</p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQWEWeeGxfm75Sx7T1XaVll0MVD4y7gU8",
+            authDomain: "claudsql.firebaseapp.com",
+            projectId: "claudsql",
+            storageBucket: "claudsql.appspot.com",
+            messagingSenderId: "909580115107",
+            appId: "1:909580115107:web:94cd36147711836b49b316"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Verificar si hay sesión activa
+        window.onload = function() {
+            const usuarioId = localStorage.getItem('usuarioId');
+            if (!usuarioId) {
+                // Si no hay sesión activa, redirigir a la página de inicio de sesión
+                window.location.href = 'iniciar-sesion.html';
+            }
+        };
+
+        // Función para mostrar mensajes de éxito o error
+        function mostrarMensaje(mensaje, tipo) {
+            const mensajeDiv = document.getElementById("mensaje");
+            mensajeDiv.style.display = 'block';
+            mensajeDiv.textContent = mensaje;
+
+            if (tipo === "error") {
+                mensajeDiv.classList.add("error");
+                mensajeDiv.classList.remove("exito");
+            } else if (tipo === "exito") {
+                mensajeDiv.classList.add("exito");
+                mensajeDiv.classList.remove("error");
+            }
+        }
+
+        // Función para publicar la nueva publicación
+        async function publicar() {
+            const titulo = document.getElementById("titulo").value;
+            const contenido = document.getElementById("contenido").value;
+            const usuarioId = localStorage.getItem('usuarioId');
+
+            // Limpiar mensaje previo
+            mostrarMensaje("", "");
+
+            if (titulo.trim() === "" || contenido.trim() === "") {
+                mostrarMensaje("Por favor, completa todos los campos.", "error");
+                return;
+            }
+
+            try {
+                // Guardar publicación en Firestore
+                const publicacionesCollection = collection(db, "publicaciones");
+                const docRef = await addDoc(publicacionesCollection, {
+                    titulo: titulo,
+                    contenido: contenido,
+                    usuarioId: usuarioId,
+                    fecha: new Date()
+                });
+
+                // Mostrar mensaje de éxito
+                mostrarMensaje("Publicación creada exitosamente.", "exito");
+
+                // Redirigir al index.html después de un pequeño delay
+                setTimeout(function() {
+                    window.location.href = 'index.html';
+                }, 2000);
+
+            } catch (e) {
+                console.error("Error al crear la publicación: ", e);
+                mostrarMensaje("Ocurrió un error al crear la publicación: " + e.message, "error");
+            }
+        }
+
+        // Asignar el evento al botón de publicar
+        document.getElementById("btnPublicar").onclick = publicar;
+    </script>
+    
+</body>
+</html>

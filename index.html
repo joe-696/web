@@ -1,0 +1,198 @@
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publicaciones | Mi Proyecto</title>
+    
+    <style>
+        /* Aquí va tu estilo */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005f6b;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .publicacion {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        .nombre-usuario {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Animación de Carga */
+        #loading {
+            font-size: 20px;
+            color: #007BFF;
+            font-weight: bold;
+        }
+
+        #loading:after {
+            content: '...';
+            animation: dots 1s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: '.'; }
+            25% { content: '..'; }
+            50% { content: '...'; }
+            75% { content: '....'; }
+            100% { content: '.....'; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Publicaciones de los Usuarios</h1>
+        <!-- Mostrar botones dependiendo si el usuario está autenticado o no -->
+        <button id="btnRegistrar" onclick="window.location.href='registro.html'" style="display:none;">Registrar Usuario</button>
+        <button id="btnIniciarSesion" onclick="window.location.href='login.html'">Iniciar Sesión</button>
+        <button id="btnCerrarSesion" onclick="logout()" style="display:none;">Cerrar Sesión</button>
+        <button id="btnNuevaPublicacion" onclick="window.location.href='nueva-publicacion.html'" style="display:none;">Crear Nueva Publicación</button>
+    </header>
+
+    <main>
+        <h2>Lista de Publicaciones</h2>
+        <div id="loading" style="display:none;">Cargando publicaciones...</div>
+        <ul id="publicaciones-lista"></ul>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Mi Proyecto</p>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQWEWeeGxfm75Sx7T1XaVll0MVD4y7gU8",
+            authDomain: "claudsql.firebaseapp.com",
+            projectId: "claudsql",
+            storageBucket: "claudsql.appspot.com",
+            messagingSenderId: "909580115107",
+            appId: "1:909580115107:web:94cd36147711836b49b316"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Verificar si hay un usuario autenticado al cargar la página
+        window.onload = function() {
+            const usuarioId = localStorage.getItem('usuarioId');
+            
+            if (usuarioId) {
+                // Si hay un usuario autenticado
+                document.getElementById("btnIniciarSesion").style.display = "none";
+                document.getElementById("btnRegistrar").style.display = "none";
+                document.getElementById("btnCerrarSesion").style.display = "inline-block";
+                document.getElementById("btnNuevaPublicacion").style.display = "inline-block";
+
+                console.log("Usuario autenticado con ID: " + usuarioId);
+                // Cargar las publicaciones desde Firestore
+                cargarPublicaciones();
+            } else {
+                // Si no hay usuario autenticado, redirigir a login.html
+                window.location.href = 'login.html';
+            }
+        };
+
+        // Función para cargar las publicaciones desde Firestore
+        async function cargarPublicaciones() {
+            const publicacionesLista = document.getElementById('publicaciones-lista');
+            const loading = document.getElementById('loading');
+            
+            // Mostrar el spinner de carga
+            loading.style.display = "block";  // Mostrar el spinner
+
+            publicacionesLista.innerHTML = ''; // Limpiar la lista antes de cargar nuevas
+
+            try {
+                // Obtener publicaciones de Firestore
+                const publicacionesCollection = collection(db, "publicaciones");
+                const querySnapshot = await getDocs(publicacionesCollection);
+
+                // Verificar si hay publicaciones y mostrarlas
+                if (querySnapshot.empty) {
+                    publicacionesLista.innerHTML = "<p>No hay publicaciones aún.</p>";
+                } else {
+                    for (const docSnapshot of querySnapshot.docs) {
+                        const publicacion = docSnapshot.data();
+                        const usuarioId = publicacion.usuarioId;
+
+                        // Obtener el nombre del usuario de la colección 'usuarios'
+                        const usuarioDoc = await getDoc(doc(db, "usuarios", usuarioId));
+                        const nombreUsuario = usuarioDoc.exists() ? usuarioDoc.data().nombre : "Usuario desconocido";
+
+                        const li = document.createElement("li");
+                        li.classList.add("publicacion");
+                        li.innerHTML = `
+                            <div class="nombre-usuario">${nombreUsuario}</div>
+                            <h3>${publicacion.titulo}</h3>
+                            <p>${publicacion.contenido}</p>
+                        `;
+                        publicacionesLista.appendChild(li);
+                    }
+                }
+            } catch (e) {
+                console.error("Error al obtener las publicaciones: ", e);
+                publicacionesLista.innerHTML = "<p>Error al cargar las publicaciones.</p>";
+            }
+
+            // Ocultar el spinner de carga cuando las publicaciones se hayan cargado
+            loading.style.display = "none";  // Ocultar el spinner
+        }
+
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('usuarioId');
+            window.location.href = 'login.html'; // Redirige al login
+        }
+    </script>
+
+</body>
+</html>

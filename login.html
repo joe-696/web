@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | Mi Proyecto</title>
+    
+    <!-- Estilos CSS integrados -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005f6b;
+        }
+
+        main {
+            margin-top: 30px;
+        }
+
+        .form-container {
+            max-width: 400px;
+            margin: auto;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        /* Estilo del mensaje de error */
+        .mensaje {
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .exito {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Iniciar Sesión</h1>
+        <button onclick="window.location.href='index.html'">Ver Publicaciones</button>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <input type="text" id="dni" placeholder="Ingresa tu DNI" required>
+            <button id="btnIniciarSesion">Iniciar Sesión</button>
+        </div>
+
+        <!-- Contenedor para mostrar mensajes de error o éxito -->
+        <div id="mensaje" class="mensaje" style="display: none;"></div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Mi Proyecto</p>
+    </footer>
+
+    <!-- Script JS integrado -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQWEWeeGxfm75Sx7T1XaVll0MVD4y7gU8",
+            authDomain: "claudsql.firebaseapp.com",
+            projectId: "claudsql",
+            storageBucket: "claudsql.appspot.com",
+            messagingSenderId: "909580115107",
+            appId: "1:909580115107:web:94cd36147711836b49b316"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Referencia a la colección 'usuarios'
+        const usersCollection = collection(db, "usuarios");
+
+        // Función para mostrar mensajes de error o éxito
+        function mostrarMensaje(mensaje, tipo) {
+            const mensajeDiv = document.getElementById("mensaje");
+            mensajeDiv.style.display = 'block';
+            mensajeDiv.textContent = mensaje;
+
+            // Establecer clase según el tipo de mensaje
+            if (tipo === "error") {
+                mensajeDiv.classList.add("error");
+                mensajeDiv.classList.remove("exito");
+            } else if (tipo === "exito") {
+                mensajeDiv.classList.add("exito");
+                mensajeDiv.classList.remove("error");
+            }
+        }
+
+        // Función para iniciar sesión (verificar si el DNI existe en la base de datos)
+        async function iniciarSesion() {
+            const dni = document.getElementById("dni").value;
+
+            // Limpiar mensajes previos
+            mostrarMensaje("", "");
+
+            // Verificamos que el campo no esté vacío
+            if (dni.trim() === "") {
+                mostrarMensaje("Por favor, ingresa un DNI.", "error");
+                return;
+            }
+
+            try {
+                // Buscar en Firestore si existe el DNI ingresado
+                const q = query(usersCollection, where("dni", "==", dni));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    // Si no se encuentra el DNI en la base de datos
+                    mostrarMensaje("DNI no encontrado. Por favor, regístrate.", "error");
+                } else {
+                    // Si se encuentra el DNI en la base de datos, obtenemos el primer documento
+                    const usuario = querySnapshot.docs[0].data();
+                    const usuarioId = querySnapshot.docs[0].id;
+
+                    // Almacenar el ID del usuario y DNI en el localStorage para mantener la sesión
+                    localStorage.setItem("usuarioId", usuarioId);
+                    localStorage.setItem("dni", dni);
+
+                    // Mostrar mensaje de éxito
+                    mostrarMensaje("Inicio de sesión exitoso.", "exito");
+
+                    // Redirigir al index.html después de un pequeño delay
+                    setTimeout(function() {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                }
+            } catch (e) {
+                console.error("Error al verificar el DNI: ", e);
+                mostrarMensaje("Ocurrió un error al verificar el DNI.", "error");
+            }
+        }
+
+        // Asignar el evento al botón de iniciar sesión
+        document.getElementById("btnIniciarSesion").onclick = iniciarSesion;
+    </script>
+    
+</body>
+</html>
